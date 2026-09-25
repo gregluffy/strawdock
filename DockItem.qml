@@ -61,12 +61,29 @@ Item {
     Rectangle {
       anchors.fill: parent
       radius: tile.host ? tile.host.tileRadius : 0
-      color: mouse.pressed ? Style.pressedFill
-        : (mouse.containsMouse ? Style.hoverFill
-        : (tile.app && tile.app.focused ? Style.selectedFill : "transparent"))
+      color: tile.app && tile.app.focused ? Style.selectedFill : "transparent"
       border.width: tile.dragging ? Math.max(1, Style.space(2)) : 0
       border.color: Color.accent
       Behavior on color { ColorAnimation { duration: 120 } }
+    }
+
+    // Hover: a line in the theme's border color on the icon's outer edge
+    // (top for a bottom dock), growing out from the middle.
+    Rectangle {
+      id: hoverLine
+      readonly property bool active: mouse.containsMouse && !tile.dragging
+      readonly property bool vert: tile.host !== null && tile.host.vertical
+      readonly property real thick: Math.max(2, Style.space(2))
+      readonly property real full: (vert ? tile.height : tile.width) * (mouse.pressed ? 0.8 : 0.55)
+      property real len: active ? full : 0
+      Behavior on len { NumberAnimation { duration: 200; easing.type: Easing.OutCubic } }
+      visible: len > 0.5
+      width: vert ? thick : len
+      height: vert ? len : thick
+      x: vert ? (tile.host.position === "left" ? tile.width - thick : 0) : (tile.width - width) / 2
+      y: vert ? (tile.height - height) / 2 : 0
+      radius: thick / 2
+      color: Color.popups.border
     }
 
     IconImage {
