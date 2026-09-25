@@ -434,6 +434,12 @@ Item {
     if (action && typeof action.execute === "function") action.execute()
   }
 
+  // Jump the given monitor to its first empty workspace (see new-workspace.sh).
+  function newWorkspace(monitorName) {
+    var script = String(Qt.resolvedUrl("new-workspace.sh")).replace(/^file:\/\//, "")
+    Quickshell.execDetached(["bash", decodeURIComponent(script), String(monitorName || "")])
+  }
+
   function openAppGrid() {
     Quickshell.execDetached(["omarchy-menu", "toggle", "apps"])
   }
@@ -529,6 +535,7 @@ Item {
       return "ok"
     }
     function setMainMonitor(name: string): string { root.updateSettings({ mainMonitor: name }); return "ok" }
+    function newWorkspace(monitor: string): string { root.newWorkspace(monitor); return "ok" }
     function setBorder(enabled: bool): string { root.updateSettings({ border: enabled }); return "ok" }
     function setAutoHide(mode: string): string { root.updateSettings({ autoHide: mode }); return "ok" }
     function pin(desktopId: string): string { root.pin(desktopId); return "ok" }

@@ -25,6 +25,7 @@ under `plugins[]` (hot-reloads on save):
 | `windowScope` | `"all"` | `all`, `monitor`, `workspace` |
 | `previews` | `true` | bool |
 | `showLauncher` | `true` | bool |
+| `showNewWorkspace` | `true` | bool — button that jumps to an empty workspace on that monitor |
 | `showRunning` | `true` | bool |
 | `border` | `true` | bool — theme border around the dock |
 | `monitors` | `"all"` | `"all"`, `"main"`, or `["DP-1", ...]` |
@@ -41,6 +42,7 @@ omarchy-shell dock setPosition left|bottom|right
 omarchy-shell dock setIconSize 56
 omarchy-shell dock setAutoHide never|smart|always
 omarchy-shell dock setBorder true|false
+omarchy-shell dock newWorkspace [monitor]   # empty = focused monitor
 omarchy-shell dock setMonitors all|main|DP-1,DP-3
 omarchy-shell dock setMainMonitor DP-1
 omarchy-shell dock pin <desktop-id> | unpin <desktop-id>

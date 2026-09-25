@@ -14,6 +14,7 @@ var DEFAULTS = {
   windowScope: "all",       // all | monitor | workspace — which windows each dock shows
   previews: true,           // live thumbnails in the window picker
   showLauncher: true,       // app-grid button at the start of the dock
+  showNewWorkspace: true,   // "new workspace" button next to the app grid
   showRunning: true,        // show running apps that are not pinned
   border: true,             // draw the theme border around the dock
   monitors: "all",          // "all", "main", or an array of output names, e.g. ["DP-1", "DP-3"]
@@ -52,6 +53,7 @@ function normalizeSettings(raw) {
     windowScope: oneOf(s.windowScope, ["all", "monitor", "workspace"], DEFAULTS.windowScope),
     previews: s.previews === undefined ? DEFAULTS.previews : s.previews === true,
     showLauncher: s.showLauncher === undefined ? DEFAULTS.showLauncher : s.showLauncher === true,
+    showNewWorkspace: s.showNewWorkspace === undefined ? DEFAULTS.showNewWorkspace : s.showNewWorkspace === true,
     showRunning: s.showRunning === undefined ? DEFAULTS.showRunning : s.showRunning === true,
     border: s.border === undefined ? DEFAULTS.border : s.border === true,
     monitors: monitors,

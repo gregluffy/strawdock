@@ -41,9 +41,12 @@ PanelWindow {
   readonly property int tileRadius: Style.cornerRadius
 
   readonly property int crossBase: margin + thickness + zoomExtra + tipSpace
-  readonly property int crossPopup: popupMode === "" ? 0
-    : margin + thickness + popupGap + (vertical ? popupCard.width : popupCard.height) + Style.space(8)
-  readonly property int cross: Math.max(crossBase, crossPopup)
+  // The surface keeps a fixed size with room for popups reserved up front.
+  // Resizing a layer surface when a popup opens/closes makes Hyprland show
+  // the dock missing or misplaced for a frame. The extra area is transparent
+  // and outside the input mask, so it's invisible and click-through.
+  readonly property int screenCross: win.screen ? (vertical ? win.screen.width : win.screen.height) : 1080
+  readonly property int cross: Math.max(crossBase, Math.round(screenCross * 0.75))
 
   anchors {
     bottom: position === "bottom" || vertical
@@ -80,6 +83,7 @@ PanelWindow {
   function targetItems() {
     var out = []
     if (s.showLauncher) out.push({ key: "__launcher__", kind: "launcher" })
+    if (s.showNewWorkspace) out.push({ key: "__newworkspace__", kind: "newworkspace" })
     var pinnedCount = 0
     for (var i = 0; i < apps.length; i++) if (apps[i].pinned) pinnedCount++
     for (var j = 0; j < apps.length; j++) {
@@ -336,6 +340,7 @@ PanelWindow {
           var t = tooltip.tile
           if (!t) return ""
           if (t.kind === "launcher") return "Applications"
+          if (t.kind === "newworkspace") return "New workspace"
           var app = t.app
           if (!app) return ""
           var n = app.windows.length
@@ -411,9 +416,10 @@ PanelWindow {
 
   // ------------------------------------------------------------- actions
   function activate(tile, button) {
-    if (tile.kind === "launcher") {
+    if (tile.kind === "launcher" || tile.kind === "newworkspace") {
       if (button === Qt.RightButton) openPopup("settings", null)
-      else dock.openAppGrid()
+      else if (tile.kind === "launcher") dock.openAppGrid()
+      else dock.newWorkspace(win.screen ? win.screen.name : "")
       return
     }
     var app = tile.app
@@ -983,6 +989,14 @@ PanelWindow {
         ToggleSwitch {
           checked: win.s.showLauncher
           onToggled: win.dock.updateSettings({ showLauncher: !win.s.showLauncher })
+        }
+      }
+
+      SettingRow {
+        label: "New workspace button"
+        ToggleSwitch {
+          checked: win.s.showNewWorkspace
+          onToggled: win.dock.updateSettings({ showNewWorkspace: !win.s.showNewWorkspace })
         }
       }
 

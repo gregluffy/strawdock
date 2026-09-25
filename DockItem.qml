@@ -98,9 +98,9 @@ Item {
     }
 
     Text {
-      visible: tile.kind === "launcher"
+      visible: tile.kind === "launcher" || tile.kind === "newworkspace"
       anchors.centerIn: parent
-      text: "󰀻"
+      text: tile.kind === "launcher" ? "󰀻" : "󰐕"
       color: mouse.containsMouse ? Color.accent : Color.foreground
       font.family: Style.font.family
       font.pixelSize: tile.host ? Math.round(tile.host.iconSize * 0.62 * tile.zoom) : 24
