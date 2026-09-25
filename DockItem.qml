@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import QtQuick.Effects
 import Quickshell.Widgets
 import qs.Commons
 
@@ -86,15 +87,67 @@ Item {
       color: Color.popups.border
     }
 
+    // Icon styles:
+    //   original — the app's own icon
+    //   mono     — the app's icon in grayscale, tinted with the theme color
+    //   line     — an outline glyph from the shell font (falls back to mono)
+    // A user icon in ~/.config/omarchy/dock-icons/ replaces mono/line icons
+    // and is drawn as a flat silhouette in the theme color.
+    readonly property string style: tile.host ? tile.host.s.iconStyle : "original"
+    readonly property string custom: tile.app && style !== "original" ? tile.app.customIcon : ""
+    readonly property bool useGlyph: style === "line" && custom === "" && tile.app !== null && tile.app.glyph !== ""
+    readonly property bool useTint: style !== "original" && custom === "" && !useGlyph
+    readonly property color tint: mouse.containsMouse ? Color.accent : Color.foreground
+    readonly property real dim: tile.app && tile.app.launching ? 0.6 : 1  // launching apps dim until their window shows
+
     IconImage {
       id: icon
-      visible: tile.kind === "app"
+      visible: tile.kind === "app" && face.style === "original"
       anchors.centerIn: parent
       implicitSize: tile.host ? Math.round(tile.host.iconSize * tile.zoom) : 32
-      source: tile.app ? tile.app.icon : ""
+      source: face.custom !== "" ? face.custom : (tile.app ? tile.app.icon : "")
       asynchronous: true
-      // Launching apps are dimmed until their window shows up.
-      opacity: tile.app && tile.app.launching ? 0.6 : 1
+      opacity: face.dim
+    }
+
+    MultiEffect {
+      visible: tile.kind === "app" && face.useTint
+      anchors.fill: icon
+      source: icon
+      saturation: -1
+      colorization: 1
+      colorizationColor: face.tint
+      opacity: face.dim
+    }
+
+    Rectangle {
+      id: silhouetteFill
+      visible: false
+      anchors.fill: icon
+      color: face.tint
+      layer.enabled: face.custom !== ""
+    }
+
+    MultiEffect {
+      visible: tile.kind === "app" && face.custom !== ""
+      anchors.fill: icon
+      source: silhouetteFill
+      maskEnabled: true
+      maskSource: icon
+      maskThresholdMin: 0.1
+      maskSpreadAtMin: 0.3
+      opacity: face.dim
+    }
+
+    Text {
+      visible: tile.kind === "app" && face.useGlyph
+      anchors.centerIn: parent
+      text: tile.app ? tile.app.glyph : ""
+      color: face.tint
+      opacity: face.dim
+      font.family: Style.font.family
+      font.pixelSize: tile.host ? Math.round(tile.host.iconSize * 0.72 * tile.zoom) : 24
+      Behavior on color { ColorAnimation { duration: 120 } }
     }
 
     Text {

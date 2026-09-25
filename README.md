@@ -28,11 +28,21 @@ under `plugins[]` (hot-reloads on save):
 | `showNewWorkspace` | `true` | bool — button that jumps to an empty workspace on that monitor |
 | `showRunning` | `true` | bool |
 | `border` | `true` | bool — theme border around the dock |
+| `iconStyle` | `"original"` | `original`, `mono` (tinted), `line` (outline glyphs) |
 | `monitors` | `"all"` | `"all"`, `"main"`, or `["DP-1", ...]` |
 | `mainMonitor` | `""` | output name for `"main"`; empty = monitor holding workspace 1 |
 | `opacity` | `0.92` | 0–1 |
 | `margin` | `8` | px from the screen edge |
 | `pinned` | foot, Nautilus, Chrome, Code, Spotify, Obsidian | desktop ids |
+
+## Icon styles
+
+`line` draws outline glyphs from the shell's Nerd Font in the theme color
+(rules in `DockModel.js` → `GLYPH_RULES`); apps without a glyph fall back to
+`mono`, which tints the app's own icon. To override any app's icon in these
+styles, drop an SVG/PNG in `~/.config/omarchy/dock-icons/` named after its
+desktop id or window class (e.g. `obsidian.svg`); it's drawn as a silhouette
+in the theme color.
 
 ## IPC
 
@@ -42,6 +52,7 @@ omarchy-shell dock setPosition left|bottom|right
 omarchy-shell dock setIconSize 56
 omarchy-shell dock setAutoHide never|smart|always
 omarchy-shell dock setBorder true|false
+omarchy-shell dock setIconStyle original|mono|line
 omarchy-shell dock newWorkspace [monitor]   # empty = focused monitor
 omarchy-shell dock setMonitors all|main|DP-1,DP-3
 omarchy-shell dock setMainMonitor DP-1

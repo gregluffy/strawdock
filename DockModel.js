@@ -17,6 +17,7 @@ var DEFAULTS = {
   showNewWorkspace: true,   // "new workspace" button next to the app grid
   showRunning: true,        // show running apps that are not pinned
   border: true,             // draw the theme border around the dock
+  iconStyle: "original",    // original | mono (theme-tinted icons) | line (outline glyphs)
   monitors: "all",          // "all", "main", or an array of output names, e.g. ["DP-1", "DP-3"]
   mainMonitor: "",          // output name used for "main"; empty = the monitor holding workspace 1
   opacity: 0.92,            // dock background opacity
@@ -56,6 +57,7 @@ function normalizeSettings(raw) {
     showNewWorkspace: s.showNewWorkspace === undefined ? DEFAULTS.showNewWorkspace : s.showNewWorkspace === true,
     showRunning: s.showRunning === undefined ? DEFAULTS.showRunning : s.showRunning === true,
     border: s.border === undefined ? DEFAULTS.border : s.border === true,
+    iconStyle: oneOf(s.iconStyle, ["original", "mono", "line"], DEFAULTS.iconStyle),
     monitors: monitors,
     mainMonitor: typeof s.mainMonitor === "string" ? s.mainMonitor : DEFAULTS.mainMonitor,
     opacity: clamp(s.opacity, 0, 1, DEFAULTS.opacity),
@@ -140,6 +142,57 @@ function sortWindows(windows) {
 
 function rectsOverlap(a, b) {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+}
+
+// Line-style glyphs from the Nerd Font the shell already uses. Each rule is
+// matched against "<desktop id> <window class> <app name>" (lowercased); the
+// first match wins. Brand logos first, then generic outlines by app type.
+var GLYPH_RULES = [
+  [/firefox|librewolf|zen/, 0xF0239],             // md-firefox
+  [/\bcode\b|vscode|visual studio code|codium|cursor/, 0xEC29], // cod-vscode
+  [/spotify/, 0xF04C7],                           // md-spotify
+  [/discord|vesktop/, 0xF066F],                   // md-discord
+  [/whatsapp/, 0xF05A3],                          // md-whatsapp
+  [/youtube/, 0xF05C3],                           // md-youtube
+  [/docker/, 0xF0868],                            // md-docker
+  [/steam/, 0xF04D3],                             // md-steam
+  [/telegram/, 0xF2C6],                           // fa-telegram
+  [/slack/, 0xE8A4],                              // dev-slack
+  [/libreoffice/, 0xF376],                        // linux-libreoffice
+  [/^x\b|\bx\.com|twitter/, 0xEB72],             // cod-twitter
+  [/google maps|maps/, 0xF0982],                  // md-map_outline
+  [/google photos|photos/, 0xF02EF],              // md-image_multiple_outline
+  [/contacts/, 0xF0007],                          // md-account_box_outline
+  [/messages|signal|chat|element|beeper/, 0xF0EDE], // md-chat_outline
+  [/foot|alacritty|kitty|ghostty|wezterm|konsole|terminal/, 0xEA85], // cod-terminal
+  [/nautilus|files|thunar|dolphin|nemo|yazi/, 0xF0256], // md-folder_outline
+  [/\bhey\b|mail|thunderbird|geary|evolution/, 0xF01F0], // md-email_outline
+  [/obsidian|notion|logseq|joplin|notes?\b/, 0xF0EBF], // md-notebook_outline
+  [/typora|writer|text editor|gedit|kate/, 0xF11D7], // md-note_text_outline
+  [/zoom|meet|teams|webex/, 0xF0BDC],             // md-video_outline
+  [/mpv|vlc|celluloid|video|player/, 0xF0FCF],    // md-movie_open_outline
+  [/imv|image|pinta|gimp|krita|loupe|eog/, 0xF0976], // md-image_outline
+  [/obs\b|screen ?record|kooha/, 0xF0EC3],        // md-record_circle_outline
+  [/1password|bitwarden|keepass|password/, 0xF0DD6], // md-key_outline
+  [/localsend|share/, 0xF1165],                   // md-send_outline
+  [/calendar/, 0xF0B67],                          // md-calendar_outline
+  [/calc/, 0xF15A6],                              // md-calculator_variant_outline
+  [/music|rhythmbox|tidal|cider/, 0xF0F74],       // md-music_note_outline
+  [/settings|control|tweaks|config/, 0xF08BB],    // md-cog_outline
+  [/disk|baobab|gparted/, 0xF02CA],               // md-harddisk
+  [/basecamp|project|trello|linear/, 0xF0814],    // md-briefcase_outline
+  [/game|lutris|heroic|retro/, 0xF0EB7],          // md-gamepad_variant_outline
+  [/claude|chatgpt|gpt|ollama|\bai\b/, 0xF167A],  // md-robot_outline
+  // Last: web apps run as chrome-<site> windows, so site rules must win.
+  [/chrom(e|ium)/, 0xF02AF],                      // md-google_chrome
+  [/web|browser|brave|vivaldi|opera/, 0xF059F]    // md-web
+]
+
+function glyphFor(entryId, cls, name) {
+  var hay = [entryId, cls, name].map(function(v) { return String(v || "").toLowerCase() }).join(" ")
+  for (var i = 0; i < GLYPH_RULES.length; i++)
+    if (GLYPH_RULES[i][0].test(hay)) return String.fromCodePoint(GLYPH_RULES[i][1])
+  return ""
 }
 
 function cloneJson(value) {

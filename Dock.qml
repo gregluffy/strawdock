@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Hyprland
+import Qt.labs.folderlistmodel
 import qs.Commons
 import "DockModel.js" as Model
 
@@ -35,6 +36,39 @@ Item {
   property var iconIndex: ({})
   property var pendingIconIndex: ({})
   property var _classCache: ({})
+
+  // User icon overrides for the mono/line styles:
+  // ~/.config/omarchy/dock-icons/<desktop-id or window class>.svg|png
+  readonly property string customIconDir: root.home + "/.config/omarchy/dock-icons"
+  property var customIcons: ({})
+
+  FolderListModel {
+    id: customIconFolder
+    folder: Util.fileUrl(root.customIconDir)
+    nameFilters: ["*.svg", "*.png"]
+    showDirs: false
+    onCountChanged: root.scanCustomIcons()
+    onStatusChanged: if (status === FolderListModel.Ready) root.scanCustomIcons()
+  }
+
+  function scanCustomIcons() {
+    var next = {}
+    for (var i = 0; i < customIconFolder.count; i++) {
+      var file = String(customIconFolder.get(i, "fileName"))
+      var base = file.slice(0, file.lastIndexOf(".")).toLowerCase()
+      if (base && next[base] === undefined) next[base] = Util.fileUrl(root.customIconDir + "/" + file)
+    }
+    root.customIcons = next
+  }
+
+  function customIconFor(entryId, cls) {
+    var keys = [entryId, cls]
+    for (var i = 0; i < keys.length; i++) {
+      var k = String(keys[i] || "").toLowerCase()
+      if (k && root.customIcons[k]) return root.customIcons[k]
+    }
+    return ""
+  }
   property var _rawClients: []
 
   // Bumped to ask every dock to reveal itself for a moment (IPC `reveal`).
@@ -385,10 +419,14 @@ Item {
       if (root.urgentAddresses[sorted[i].address]) urgent = true
     }
     var entryId = entry ? String(entry.id) : ""
+    var windowClass = cls || (sorted.length > 0 ? sorted[0].cls : "")
+    var name = entry ? String(entry.name || entryId) : Model.prettyClass(cls)
     return {
       key: key,
       entryId: entryId,
-      name: entry ? String(entry.name || entryId) : Model.prettyClass(cls),
+      name: name,
+      glyph: Model.glyphFor(entryId, windowClass, name),
+      customIcon: root.customIconFor(entryId, windowClass),
       icon: root.iconSource(entry ? entry.icon : "", cls || key),
       pinned: pinned,
       windows: sorted,
@@ -536,6 +574,7 @@ Item {
     }
     function setMainMonitor(name: string): string { root.updateSettings({ mainMonitor: name }); return "ok" }
     function newWorkspace(monitor: string): string { root.newWorkspace(monitor); return "ok" }
+    function setIconStyle(style: string): string { root.updateSettings({ iconStyle: style }); return "ok" }
     function setBorder(enabled: bool): string { root.updateSettings({ border: enabled }); return "ok" }
     function setAutoHide(mode: string): string { root.updateSettings({ autoHide: mode }); return "ok" }
     function pin(desktopId: string): string { root.pin(desktopId); return "ok" }

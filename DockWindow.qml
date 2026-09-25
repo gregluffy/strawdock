@@ -536,6 +536,8 @@ PanelWindow {
     Text {
       width: parent.labelW
       anchors.verticalCenter: parent.verticalCenter
+      // Long labels wrap instead of running into the control.
+      wrapMode: Text.WordWrap
       text: parent.label
       color: Color.popups.text
       font.family: Style.font.family
@@ -908,6 +910,19 @@ PanelWindow {
       }
 
       SettingRow {
+        label: "Icon style"
+        ButtonGroup {
+          options: [
+            { value: "original", label: "Original", tooltip: "The apps' own icons" },
+            { value: "mono", label: "Mono", tooltip: "App icons tinted with the theme color" },
+            { value: "line", label: "Line", tooltip: "Outline glyphs in the theme color" }
+          ]
+          value: win.s.iconStyle
+          onChanged: function(v) { win.dock.updateSettings({ iconStyle: v }) }
+        }
+      }
+
+      SettingRow {
         label: "Show windows"
         ButtonGroup {
           options: [
@@ -993,7 +1008,7 @@ PanelWindow {
       }
 
       SettingRow {
-        label: "New workspace button"
+        label: "New workspace"
         ToggleSwitch {
           checked: win.s.showNewWorkspace
           onToggled: win.dock.updateSettings({ showNewWorkspace: !win.s.showNewWorkspace })
