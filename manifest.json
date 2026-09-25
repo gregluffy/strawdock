@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "luffy.dock",
+  "name": "Dock",
+  "version": "1.0.0",
+  "author": "luffy",
+  "description": "Themed application dock with pinned and running apps, window picker with live previews, magnification and auto-hide.",
+  "kinds": [
+    "panel"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "panel": "Dock.qml"
+  }
+}
