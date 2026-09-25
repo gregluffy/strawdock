@@ -16,7 +16,7 @@ Item {
   property var shell: null
   property var manifest: null
 
-  readonly property string pluginId: manifest && manifest.id ? String(manifest.id) : "luffy.dock"
+  readonly property string pluginId: manifest && manifest.id ? String(manifest.id) : "straw.dock"
   readonly property string home: Quickshell.env("HOME")
 
   // Raw entry from shell.json plugins[] (settings live inline on it).
@@ -88,7 +88,7 @@ Item {
         if (list[i] && String(list[i].id) === root.pluginId) { found = list[i]; break }
       }
     } catch (e) {
-      console.warn("luffy.dock: could not parse shell.json:", e)
+      console.warn("straw.dock: could not parse shell.json:", e)
       return
     }
     var next = found ? Model.cloneJson(found) : ({})
@@ -105,7 +105,7 @@ Item {
     if (root.shell && typeof root.shell.updateEntryInline === "function")
       root.shell.updateEntryInline(root.pluginId, persisted)
     else
-      console.warn("luffy.dock: shell API unavailable, settings not persisted")
+      console.warn("straw.dock: shell API unavailable, settings not persisted")
   }
 
   function setPinned(ids) {

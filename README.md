@@ -1,4 +1,4 @@
-# luffy.dock
+# straw.dock
 
 Themed application dock for the Omarchy shell (a keep-loaded `panel` plugin).
 
@@ -12,7 +12,7 @@ Themed application dock for the Omarchy shell (a keep-loaded `panel` plugin).
 
 ## Settings
 
-Stored inline on the `luffy.dock` entry in `~/.config/omarchy/shell.json`
+Stored inline on the `straw.dock` entry in `~/.config/omarchy/shell.json`
 under `plugins[]` (hot-reloads on save):
 
 | key | default | values |
@@ -67,5 +67,9 @@ omarchy-shell dock settings
 omarchy plugin add git@gitlab.com:administration7242251/quick-shell-plugins/straw-dock.git --enable --yes
 ```
 
-Or by hand: clone this repo to `~/.config/omarchy/plugins/luffy.dock`, then
-`omarchy-shell shell rescanPlugins && omarchy plugin enable luffy.dock`.
+Or by hand: clone this repo to `~/.config/omarchy/plugins/straw.dock`, then
+`omarchy-shell shell rescanPlugins && omarchy plugin enable straw.dock`.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
