@@ -15,6 +15,7 @@ var DEFAULTS = {
   previews: true,           // live thumbnails in the window picker
   showLauncher: true,       // app-grid button at the start of the dock
   showRunning: true,        // show running apps that are not pinned
+  border: true,             // draw the theme border around the dock
   monitors: "all",          // "all", "main", or an array of output names, e.g. ["DP-1", "DP-3"]
   mainMonitor: "",          // output name used for "main"; empty = the monitor holding workspace 1
   opacity: 0.92,            // dock background opacity
@@ -52,6 +53,7 @@ function normalizeSettings(raw) {
     previews: s.previews === undefined ? DEFAULTS.previews : s.previews === true,
     showLauncher: s.showLauncher === undefined ? DEFAULTS.showLauncher : s.showLauncher === true,
     showRunning: s.showRunning === undefined ? DEFAULTS.showRunning : s.showRunning === true,
+    border: s.border === undefined ? DEFAULTS.border : s.border === true,
     monitors: monitors,
     mainMonitor: typeof s.mainMonitor === "string" ? s.mainMonitor : DEFAULTS.mainMonitor,
     opacity: clamp(s.opacity, 0, 1, DEFAULTS.opacity),

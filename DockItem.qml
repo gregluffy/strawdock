@@ -61,7 +61,7 @@ Item {
     Rectangle {
       anchors.fill: parent
       radius: tile.host ? tile.host.tileRadius : 0
-      color: tile.app && tile.app.focused ? Style.selectedFill : "transparent"
+      color: "transparent"
       border.width: tile.dragging ? Math.max(1, Style.space(2)) : 0
       border.color: Color.accent
       Behavior on color { ColorAnimation { duration: 120 } }

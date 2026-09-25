@@ -268,7 +268,9 @@ PanelWindow {
       y: win.position === "bottom" ? win.height - win.margin - height + win.hideOffset : (win.height - height) / 2
       radius: win.radius
       color: Util.alpha(Color.bar.background, win.s.opacity)
-      borderSpec: Border.localOrSurfaceSpec("popups", "border", Color.popups.border, Color.popups.border, Math.max(1, Style.space(1)))
+      borderSpec: win.s.border
+        ? Border.localOrSurfaceSpec("popups", "border", Color.popups.border, Color.popups.border, Math.max(1, Style.space(1)))
+        : Border.none()
       opacity: win.hideOffset > win.thickness ? 0 : 1
       Behavior on opacity { NumberAnimation { duration: 160 } }
 
@@ -944,7 +946,7 @@ PanelWindow {
         PanelSlider {
           id: opacitySlider
           width: settingsCol.controlW
-          minimum: 0.3
+          minimum: 0
           maximum: 1
           step: 0.05
           value: win.s.opacity
@@ -981,6 +983,14 @@ PanelWindow {
         ToggleSwitch {
           checked: win.s.showLauncher
           onToggled: win.dock.updateSettings({ showLauncher: !win.s.showLauncher })
+        }
+      }
+
+      SettingRow {
+        label: "Border"
+        ToggleSwitch {
+          checked: win.s.border
+          onToggled: win.dock.updateSettings({ border: !win.s.border })
         }
       }
     }

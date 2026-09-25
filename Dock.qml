@@ -529,6 +529,7 @@ Item {
       return "ok"
     }
     function setMainMonitor(name: string): string { root.updateSettings({ mainMonitor: name }); return "ok" }
+    function setBorder(enabled: bool): string { root.updateSettings({ border: enabled }); return "ok" }
     function setAutoHide(mode: string): string { root.updateSettings({ autoHide: mode }); return "ok" }
     function pin(desktopId: string): string { root.pin(desktopId); return "ok" }
     function unpin(desktopId: string): string { root.unpin(desktopId); return "ok" }

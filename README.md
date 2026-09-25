@@ -26,6 +26,7 @@ under `plugins[]` (hot-reloads on save):
 | `previews` | `true` | bool |
 | `showLauncher` | `true` | bool |
 | `showRunning` | `true` | bool |
+| `border` | `true` | bool — theme border around the dock |
 | `monitors` | `"all"` | `"all"`, `"main"`, or `["DP-1", ...]` |
 | `mainMonitor` | `""` | output name for `"main"`; empty = monitor holding workspace 1 |
 | `opacity` | `0.92` | 0–1 |
@@ -39,6 +40,7 @@ omarchy-shell dock reveal | openSettings | closePopups
 omarchy-shell dock setPosition left|bottom|right
 omarchy-shell dock setIconSize 56
 omarchy-shell dock setAutoHide never|smart|always
+omarchy-shell dock setBorder true|false
 omarchy-shell dock setMonitors all|main|DP-1,DP-3
 omarchy-shell dock setMainMonitor DP-1
 omarchy-shell dock pin <desktop-id> | unpin <desktop-id>
