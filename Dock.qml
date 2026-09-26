@@ -540,6 +540,19 @@ Item {
     }
   }
 
+  // The user's name for an output, falling back to the output name itself.
+  function monitorLabel(name) {
+    return root.settings.monitorNames[String(name)] || String(name)
+  }
+
+  function setMonitorName(name, label) {
+    var next = Model.cloneJson(root.settings.monitorNames) || {}
+    label = String(label || "").trim()
+    if (label.length > 0) next[name] = label
+    else delete next[name]
+    if (JSON.stringify(next) !== JSON.stringify(root.settings.monitorNames)) root.updateSettings({ monitorNames: next })
+  }
+
   // Custom mode: toggle one monitor, keeping at least one selected.
   function toggleMonitor(name) {
     var current = Array.isArray(root.settings.monitors)
@@ -573,6 +586,7 @@ Item {
       return "ok"
     }
     function setMainMonitor(name: string): string { root.updateSettings({ mainMonitor: name }); return "ok" }
+    function setMonitorName(monitor: string, name: string): string { root.setMonitorName(monitor, name); return "ok" }
     function newWorkspace(monitor: string): string { root.newWorkspace(monitor); return "ok" }
     function setIconStyle(style: string): string { root.updateSettings({ iconStyle: style }); return "ok" }
     function setBorder(enabled: bool): string { root.updateSettings({ border: enabled }); return "ok" }

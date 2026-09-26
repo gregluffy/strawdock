@@ -20,6 +20,7 @@ var DEFAULTS = {
   iconStyle: "original",    // original | mono (theme-tinted icons) | line (outline glyphs)
   monitors: "all",          // "all", "main", or an array of output names, e.g. ["DP-1", "DP-3"]
   mainMonitor: "",          // output name used for "main"; empty = the monitor holding workspace 1
+  monitorNames: {},         // friendly names by output name, e.g. { "DP-1": "Left" }
   opacity: 0.92,            // dock background opacity
   margin: 8,                // gap between the dock and the screen edge
   pinned: DEFAULT_PINNED
@@ -45,6 +46,13 @@ function normalizeSettings(raw) {
   } else if (s.monitors === "main") {
     monitors = "main"
   }
+  var monitorNames = {}
+  if (s.monitorNames && typeof s.monitorNames === "object" && !Array.isArray(s.monitorNames)) {
+    for (var output in s.monitorNames) {
+      var label = String(s.monitorNames[output] || "").trim()
+      if (label.length > 0) monitorNames[output] = label
+    }
+  }
   return {
     position: oneOf(s.position, ["bottom", "left", "right"], DEFAULTS.position),
     iconSize: Math.round(clamp(s.iconSize, 24, 128, DEFAULTS.iconSize)),
@@ -60,6 +68,7 @@ function normalizeSettings(raw) {
     iconStyle: oneOf(s.iconStyle, ["original", "mono", "line"], DEFAULTS.iconStyle),
     monitors: monitors,
     mainMonitor: typeof s.mainMonitor === "string" ? s.mainMonitor : DEFAULTS.mainMonitor,
+    monitorNames: monitorNames,
     opacity: clamp(s.opacity, 0, 1, DEFAULTS.opacity),
     margin: Math.round(clamp(s.margin, 0, 64, DEFAULTS.margin)),
     pinned: pinned

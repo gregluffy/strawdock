@@ -852,8 +852,10 @@ PanelWindow {
           readonly property bool here: !!win.hyprMonitor && modelData.name === win.hyprMonitor.name
           glyph: "󰍹"
           emphasized: here
-          label: String(modelData.name) + (here ? "  (this screen)" : "")
-          hint: modelData.width + "×" + modelData.height
+          readonly property string output: String(modelData.name)
+          readonly property string custom: win.dock.monitorLabel(output)
+          label: custom + (here ? "  (this screen)" : "")
+          hint: (custom !== output ? output + "  ·  " : "") + modelData.width + "×" + modelData.height
           onTriggered: { win.dock.newWorkspace(String(modelData.name)); win.closePopup() }
         }
       }
@@ -899,7 +901,7 @@ PanelWindow {
         ButtonGroup {
           options: [
             { value: "all", label: "All" },
-            { value: "main", label: "Main", tooltip: "Only on " + win.dock.mainMonitorName },
+            { value: "main", label: "Main", tooltip: "Only on " + win.dock.monitorLabel(win.dock.mainMonitorName) },
             { value: "custom", label: "Selected" }
           ]
           value: Array.isArray(win.s.monitors) ? "custom" : win.s.monitors
@@ -933,7 +935,7 @@ PanelWindow {
               Text {
                 id: chipText
                 anchors.centerIn: parent
-                text: chip.name + (chip.here ? " •" : "")
+                text: win.dock.monitorLabel(chip.name) + (chip.here ? " •" : "")
                 color: chip.selected ? Color.accent : Color.popups.text
                 font.family: Style.font.family
                 font.pixelSize: Style.font.body
@@ -951,7 +953,45 @@ PanelWindow {
               }
               PanelToolTip {
                 visible: chipMouse.containsMouse
-                text: String(chip.modelData.model || chip.modelData.name) + (chip.here ? " (this monitor)" : "")
+                text: chip.name + "  ·  " + String(chip.modelData.model || "") + (chip.here ? " (this monitor)" : "")
+              }
+            }
+          }
+        }
+      }
+
+      // Friendly names shown instead of output names (DP-1, HDMI-A-1, ...).
+      SettingRow {
+        label: "Monitor names"
+        Column {
+          width: parent.width
+          spacing: Style.space(6)
+          Repeater {
+            model: Quickshell.screens
+            delegate: Row {
+              id: nameRow
+              required property var modelData
+              readonly property string name: String(modelData.name)
+              width: parent.width
+              spacing: Style.space(8)
+              Text {
+                id: outputText
+                width: Style.space(70)
+                anchors.verticalCenter: parent.verticalCenter
+                text: nameRow.name
+                elide: Text.ElideRight
+                color: Util.alpha(Color.popups.text, 0.7)
+                font.family: Style.font.family
+                font.pixelSize: Style.font.caption
+              }
+              TextField {
+                width: nameRow.width - outputText.width - nameRow.spacing
+                text: win.s.monitorNames[nameRow.name] || ""
+                placeholderText: String(nameRow.modelData.model || nameRow.name)
+                foreground: Color.popups.text
+                verticalPadding: Style.space(4)
+                onEditingFinished: win.dock.setMonitorName(nameRow.name, text)
+                Keys.onEscapePressed: win.closePopup()
               }
             }
           }

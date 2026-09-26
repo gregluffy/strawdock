@@ -31,6 +31,7 @@ under `plugins[]` (hot-reloads on save):
 | `iconStyle` | `"original"` | `original`, `mono` (tinted), `line` (outline glyphs) |
 | `monitors` | `"all"` | `"all"`, `"main"`, or `["DP-1", ...]` |
 | `mainMonitor` | `""` | output name for `"main"`; empty = monitor holding workspace 1 |
+| `monitorNames` | `{}` | friendly names shown instead of output names, e.g. `{ "DP-1": "Left" }` |
 | `opacity` | `0.92` | 0–1 |
 | `margin` | `8` | px from the screen edge |
 | `pinned` | foot, Nautilus, Chrome, Code, Spotify, Obsidian | desktop ids |
@@ -54,6 +55,7 @@ omarchy-shell dock setAutoHide never|smart|always
 omarchy-shell dock setBorder true|false
 omarchy-shell dock setIconStyle original|mono|line
 omarchy-shell dock newWorkspace [monitor]   # empty = focused monitor
+omarchy-shell dock setMonitorName DP-1 "Left"   # empty name = back to DP-1
 omarchy-shell dock setMonitors all|main|DP-1,DP-3
 omarchy-shell dock setMainMonitor DP-1
 omarchy-shell dock pin <desktop-id> | unpin <desktop-id>
