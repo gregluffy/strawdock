@@ -340,7 +340,7 @@ PanelWindow {
           var t = tooltip.tile
           if (!t) return ""
           if (t.kind === "launcher") return "Applications"
-          if (t.kind === "newworkspace") return "New workspace"
+          if (t.kind === "newworkspace") return (Hyprland.monitors.values || []).length > 1 ? "New workspace  ·  middle-click: pick monitor" : "New workspace"
           var app = t.app
           if (!app) return ""
           var n = app.windows.length
@@ -371,7 +371,8 @@ PanelWindow {
         x: popupCard.pad
         y: popupCard.pad
         sourceComponent: win.popupMode === "picker" ? pickerComponent
-          : (win.popupMode === "menu" ? menuComponent : (win.popupMode === "settings" ? settingsComponent : null))
+          : (win.popupMode === "menu" ? menuComponent : (win.popupMode === "settings" ? settingsComponent
+          : (win.popupMode === "monitors" ? monitorsComponent : null)))
       }
     }
   }
@@ -392,7 +393,7 @@ PanelWindow {
 
   onPopupAppChanged: {
     // The app went away (last window closed and not pinned).
-    if (popupMode !== "" && popupMode !== "settings" && popupApp === null) closePopup()
+    if ((popupMode === "picker" || popupMode === "menu") && popupApp === null) closePopup()
   }
 
   function openPopup(mode, tile) {
@@ -419,6 +420,10 @@ PanelWindow {
     if (tile.kind === "launcher" || tile.kind === "newworkspace") {
       if (button === Qt.RightButton) openPopup("settings", null)
       else if (tile.kind === "launcher") dock.openAppGrid()
+      else if (button === Qt.MiddleButton && (Hyprland.monitors.values || []).length > 1) {
+        if (popupMode === "monitors") closePopup()
+        else openPopup("monitors", tile)
+      }
       else dock.newWorkspace(win.screen ? win.screen.name : "")
       return
     }
@@ -807,6 +812,50 @@ PanelWindow {
         glyph: "󰒓"
         label: "Dock settings"
         onTriggered: win.openPopup("settings", null)
+      }
+    }
+  }
+
+  // Middle-click on the new-workspace button: pick the monitor to open it on.
+  Component {
+    id: monitorsComponent
+
+    Column {
+      id: monitorsMenu
+      readonly property var monitors: (Hyprland.monitors.values || []).slice().sort(function(a, b) {
+        return a.x !== b.x ? a.x - b.x : a.y - b.y
+      })
+      width: Math.max(Style.space(240), Math.min(Style.space(380), widest))
+      property real widest: 0
+      spacing: Style.space(2)
+
+      function measure() {
+        var w = 0
+        for (var i = 0; i < children.length; i++) {
+          var c = children[i]
+          if (c.implicitWidth !== undefined && c.visible) w = Math.max(w, c.implicitWidth)
+        }
+        widest = w
+      }
+      Component.onCompleted: Qt.callLater(measure)
+
+      SectionTitle {
+        text: "New workspace on"
+        width: monitorsMenu.width
+        bottomPadding: Style.space(6)
+      }
+
+      Repeater {
+        model: monitorsMenu.monitors
+        delegate: MenuRow {
+          required property var modelData
+          readonly property bool here: !!win.hyprMonitor && modelData.name === win.hyprMonitor.name
+          glyph: "󰍹"
+          emphasized: here
+          label: String(modelData.name) + (here ? "  (this screen)" : "")
+          hint: modelData.width + "×" + modelData.height
+          onTriggered: { win.dock.newWorkspace(String(modelData.name)); win.closePopup() }
+        }
       }
     }
   }

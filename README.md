@@ -25,7 +25,7 @@ under `plugins[]` (hot-reloads on save):
 | `windowScope` | `"all"` | `all`, `monitor`, `workspace` |
 | `previews` | `true` | bool |
 | `showLauncher` | `true` | bool |
-| `showNewWorkspace` | `true` | bool — button that jumps to an empty workspace on that monitor |
+| `showNewWorkspace` | `true` | bool — button that jumps to an empty workspace on that monitor (middle-click: choose the monitor) |
 | `showRunning` | `true` | bool |
 | `border` | `true` | bool — theme border around the dock |
 | `iconStyle` | `"original"` | `original`, `mono` (tinted), `line` (outline glyphs) |
