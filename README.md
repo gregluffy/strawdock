@@ -15,8 +15,19 @@ The three `iconStyle`s, shown on the Osaka Jade theme:
   live previews.
 - Middle-click: new window. Right-click: window list, desktop actions,
   pin/unpin, close. Scroll: cycle the app's windows. Drag pinned icons to reorder.
+- New-workspace button (`showNewWorkspace`): click jumps to an empty workspace
+  on the monitor the dock is on. With more than one monitor, middle-click
+  opens a menu to pick which monitor gets the new workspace (names come from
+  `monitorNames` when set).
 - Right-click the dock background (or the app-grid button) for settings.
 - Colors, borders, font and corner radius follow the current Omarchy theme.
+
+> **Why a dock on Omarchy?** Omarchy is built around the keyboard, and a
+> mouse-driven dock goes against that on purpose. Not everyone wants to
+> memorise a long list of shortcuts, though. This plugin is for people who
+> just want their apps and windows one click away. Your keybindings keep
+> working as before, and you can hide the dock (`autoHide`) or disable the
+> plugin at any time.
 
 ## Settings
 
@@ -83,6 +94,17 @@ Or by hand, then enable it:
 git clone https://github.com/gregluffy/strawdock.git ~/.config/omarchy/plugins/straw.dock
 omarchy-shell shell rescanPlugins && omarchy plugin enable straw.dock
 ```
+
+## Disclaimer
+
+straw.dock is an independent community plugin for the Omarchy shell (Quickshell).
+It is not affiliated with or endorsed by the Omarchy project. It is provided
+as is, without warranty of any kind. Omarchy's plugin API may change between
+releases and break the dock, so check back here if something stops working
+after an update. Everything stays on your machine: the dock talks to
+Hyprland through `hyprctl` (list, focus and close windows), launches apps,
+scans your local icon folders, and saves its settings to its own entry in
+`~/.config/omarchy/shell.json`. It makes no network requests.
 
 ## License
 
