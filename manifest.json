@@ -3,7 +3,7 @@
   "id": "straw.dock",
   "name": "Dock",
   "version": "1.0.0",
-  "author": "luffy",
+  "author": "gregluffy",
   "description": "Themed application dock with pinned and running apps, window picker with live previews, magnification and auto-hide.",
   "kinds": [
     "panel"

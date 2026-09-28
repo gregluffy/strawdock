@@ -95,6 +95,23 @@ git clone https://github.com/gregluffy/strawdock.git ~/.config/omarchy/plugins/s
 omarchy-shell shell rescanPlugins && omarchy plugin enable straw.dock
 ```
 
+Update to the latest version with `omarchy plugin update straw.dock`.
+
+### Requirements
+
+Omarchy with the Quickshell-based shell. The dock also uses `hyprctl` and
+`jq`, which ship with Omarchy. It has no other dependencies.
+
+## Remove
+
+```
+omarchy plugin remove straw.dock
+```
+
+This disables the dock and deletes its folder. Your dock settings stay in the
+`straw.dock` entry of `~/.config/omarchy/shell.json`, so reinstalling brings
+them back. Delete that entry too if you want them gone.
+
 ## Disclaimer
 
 straw.dock is an independent community plugin for the Omarchy shell (Quickshell).
