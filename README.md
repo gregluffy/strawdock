@@ -2,6 +2,14 @@
 
 Themed application dock for the Omarchy shell (a keep-loaded `panel` plugin).
 
+The three `iconStyle`s, shown on the Osaka Jade theme:
+
+| style | |
+|---|---|
+| `original` | ![original icons](screenshots/dock-original.png) |
+| `mono` | ![mono icons](screenshots/dock-mono.png) |
+| `line` | ![line icons](screenshots/dock-line.png) |
+
 - Pinned apps plus running apps. Click to launch, or to focus a single window
   (this switches to its workspace). With 2+ windows, click opens a picker with
   live previews.
@@ -66,11 +74,15 @@ omarchy-shell dock settings
 ## Install
 
 ```
-omarchy plugin add git@gitlab.com:administration7242251/quick-shell-plugins/straw-dock.git --enable --yes
+omarchy plugin add https://github.com/gregluffy/strawdock.git --enable --yes
 ```
 
-Or by hand: clone this repo to `~/.config/omarchy/plugins/straw.dock`, then
-`omarchy-shell shell rescanPlugins && omarchy plugin enable straw.dock`.
+Or by hand, then enable it:
+
+```
+git clone https://github.com/gregluffy/strawdock.git ~/.config/omarchy/plugins/straw.dock
+omarchy-shell shell rescanPlugins && omarchy plugin enable straw.dock
+```
 
 ## License
 
