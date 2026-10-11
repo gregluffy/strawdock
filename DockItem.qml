@@ -92,7 +92,7 @@ Item {
     //   mono     — the app's icon in grayscale, tinted with the theme color
     //   line     — an outline glyph from the shell font (falls back to mono)
     // A user icon in ~/.config/omarchy/dock-icons/ replaces mono/line icons
-    // and is drawn as a flat silhouette in the theme color.
+    // and is drawn as a flat silhouette in the theme color (glyph-sized in line).
     readonly property string style: tile.host ? tile.host.s.iconStyle : "original"
     readonly property string custom: tile.app && style !== "original" ? tile.app.customIcon : ""
     readonly property bool useGlyph: style === "line" && custom === "" && tile.app !== null && tile.app.glyph !== ""
@@ -104,7 +104,7 @@ Item {
       id: icon
       visible: tile.kind === "app" && face.style === "original"
       anchors.centerIn: parent
-      implicitSize: tile.host ? Math.round(tile.host.iconSize * tile.zoom) : 32
+      implicitSize: tile.host ? Math.round(tile.host.iconSize * tile.zoom * (face.custom !== "" && face.style === "line" ? 0.72 : 1)) : 32
       source: face.custom !== "" ? face.custom : (tile.app ? tile.app.icon : "")
       asynchronous: true
       opacity: face.dim
@@ -128,14 +128,17 @@ Item {
       layer.enabled: face.custom !== ""
     }
 
+    // Mask with the inner Image (a texture provider; IconImage itself isn't).
+    // The soft edge spans alpha [min*(1+spread) - spread, min*(1+spread)], so
+    // min 0.5 / spread 1 maps alpha ~linearly and keeps the icon's antialiasing.
     MultiEffect {
       visible: tile.kind === "app" && face.custom !== ""
       anchors.fill: icon
       source: silhouetteFill
       maskEnabled: true
-      maskSource: icon
-      maskThresholdMin: 0.1
-      maskSpreadAtMin: 0.3
+      maskSource: icon.backer
+      maskThresholdMin: 0.5
+      maskSpreadAtMin: 1
       opacity: face.dim
     }
 
