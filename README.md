@@ -62,7 +62,8 @@ under `plugins[]` (hot-reloads on save):
 `mono`, which tints the app's own icon. To override any app's icon in these
 styles, drop an SVG/PNG in `~/.config/omarchy/dock-icons/` named after its
 desktop id or window class (e.g. `obsidian.svg`); it's drawn as a silhouette
-in the theme color.
+in the theme color. Or right-click the app → **Custom icon…** to pick a file
+(needs `zenity`), and **Reset icon** to remove it.
 
 ## IPC
 

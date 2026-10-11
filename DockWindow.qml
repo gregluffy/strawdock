@@ -795,6 +795,21 @@ PanelWindow {
         }
       }
 
+      // Custom icons only show in the mono/line styles.
+      MenuRow {
+        visible: menu.app && win.s.iconStyle !== "original"
+        glyph: String.fromCodePoint(0xF02E9)  // md-image
+        label: "Custom icon…"
+        onTriggered: { win.dock.chooseCustomIcon(menu.app); win.closePopup() }
+      }
+
+      MenuRow {
+        visible: menu.app && menu.app.customIcon !== "" && win.s.iconStyle !== "original"
+        glyph: String.fromCodePoint(0xF099B)  // md-restore
+        label: "Reset icon"
+        onTriggered: { win.dock.resetCustomIcon(menu.app); win.closePopup() }
+      }
+
       MenuRow {
         visible: menu.app && menu.app.windows.length > 0
         glyph: "󰅖"

@@ -69,6 +69,39 @@ Item {
     }
     return ""
   }
+
+  // Re-point the folder model so it picks up a dock-icons dir created after
+  // startup (it doesn't watch a folder that didn't exist yet).
+  function rescanCustomIcons() {
+    customIconFolder.folder = ""
+    customIconFolder.folder = Util.fileUrl(root.customIconDir)
+  }
+
+  Process {
+    id: customIconProc
+    onExited: root.rescanCustomIcons()
+  }
+
+  // Pick an SVG/PNG and copy it to dock-icons/<desktop id or class>.<ext>.
+  function chooseCustomIcon(app) {
+    if (!app || customIconProc.running) return
+    var key = String(app.entryId || (app.windows.length > 0 ? app.windows[0].cls : "") || app.key).toLowerCase()
+    if (!key) return
+    customIconProc.command = ["bash", "-c", [
+      'f=$(zenity --file-selection --title="Dock icon for $3" --file-filter="Images (svg, png) | *.svg *.png *.SVG *.PNG") || exit 0;',
+      'ext=${f##*.}; ext=${ext,,};',
+      'case $ext in svg|png) ;; *) exit 1;; esac;',
+      'mkdir -p "$1" && rm -f "$1/$2.svg" "$1/$2.png" && cp -- "$f" "$1/$2.$ext"'
+    ].join(" "), "_", root.customIconDir, key, String(app.name || key)]
+    customIconProc.running = true
+  }
+
+  function resetCustomIcon(app) {
+    if (!app || !app.customIcon || customIconProc.running) return
+    var path = decodeURIComponent(String(app.customIcon).replace(/^file:\/\//, ""))
+    customIconProc.command = ["rm", "-f", "--", path]
+    customIconProc.running = true
+  }
   property var _rawClients: []
 
   // Bumped to ask every dock to reveal itself for a moment (IPC `reveal`).
