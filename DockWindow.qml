@@ -976,26 +976,43 @@ PanelWindow {
       ]
       spacing: Style.space(14)
 
-      Column {
-        id: nav
-        width: Style.space(160)
-        spacing: Style.space(2)
+      // Section list, with the plugin version pinned to its bottom.
+      Item {
+        width: nav.width
+        height: pageBox.height
 
-        SectionTitle {
-          text: "Dock"
-          bottomPadding: Style.space(6)
+        Column {
+          id: nav
+          width: Style.space(160)
+          spacing: Style.space(2)
+
+          SectionTitle {
+            text: "Dock"
+            bottomPadding: Style.space(6)
+          }
+
+          Repeater {
+            model: settingsRoot.pages
+            delegate: MenuRow {
+              required property var modelData
+              glyph: String.fromCodePoint(modelData.glyph)
+              label: modelData.label
+              selected: win.settingsPage === modelData.id
+              emphasized: selected
+              onTriggered: win.settingsPage = modelData.id
+            }
+          }
         }
 
-        Repeater {
-          model: settingsRoot.pages
-          delegate: MenuRow {
-            required property var modelData
-            glyph: String.fromCodePoint(modelData.glyph)
-            label: modelData.label
-            selected: win.settingsPage === modelData.id
-            emphasized: selected
-            onTriggered: win.settingsPage = modelData.id
-          }
+        Text {
+          id: versionText
+          anchors.bottom: parent.bottom
+          x: Style.space(10)
+          visible: text !== ""
+          text: win.dock.manifest && win.dock.manifest.version ? "v" + win.dock.manifest.version : ""
+          color: Util.alpha(Color.popups.text, 0.55)
+          font.family: Style.font.family
+          font.pixelSize: Style.font.caption
         }
       }
 
@@ -1009,7 +1026,8 @@ PanelWindow {
         id: pageBox
         width: layoutPage.width
         height: Math.max(layoutPage.implicitHeight, appearancePage.implicitHeight,
-          itemsPage.implicitHeight, monitorsPage.implicitHeight, nav.implicitHeight)
+          itemsPage.implicitHeight, monitorsPage.implicitHeight,
+          nav.implicitHeight + (versionText.visible ? versionText.implicitHeight + Style.space(12) : 0))
 
         SettingsPage {
           id: layoutPage
