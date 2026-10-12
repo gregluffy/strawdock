@@ -511,6 +511,13 @@ Item {
     Quickshell.execDetached(["bash", decodeURIComponent(script), String(monitorName || "")])
   }
 
+  // Session button: the same Omarchy scripts as the system menu (they close
+  // windows cleanly before logging out / rebooting / powering off).
+  function session(action) {
+    var cmd = { logout: "omarchy-system-logout", reboot: "omarchy-system-reboot", shutdown: "omarchy-system-shutdown" }[action]
+    if (cmd) Quickshell.execDetached([cmd])
+  }
+
   function openAppGrid() {
     Quickshell.execDetached(["omarchy-menu", "toggle", "apps"])
   }
@@ -611,6 +618,8 @@ Item {
     target: "dock"
     function reveal(): string { root.peekSerial++; return "ok" }
     function setPosition(position: string): string { root.updateSettings({ position: position }); return "ok" }
+    function setAlign(align: string): string { root.updateSettings({ align: align }); return "ok" }
+    function setFullWidth(enabled: bool): string { root.updateSettings({ fullWidth: enabled }); return "ok" }
     function setIconSize(size: int): string { root.updateSettings({ iconSize: size }); return "ok" }
     function setMonitors(mode: string): string {
       // "all", "main", or a comma-separated list of output names.

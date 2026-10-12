@@ -19,7 +19,10 @@ The three `iconStyle`s, shown on the Osaka Jade theme:
   on the monitor the dock is on. With more than one monitor, middle-click
   opens a menu to pick which monitor gets the new workspace (names come from
   `monitorNames` when set).
-- Right-click the dock background (or the app-grid button) for settings.
+- Session button (`showSession`): log out, restart or shut down (through
+  Omarchy's `omarchy-system-*` scripts, which close windows cleanly first).
+- Right-click the dock background (or the app-grid button) for settings,
+  grouped into Layout, Appearance, Items and Monitors.
 - Colors, borders, font and corner radius follow the current Omarchy theme.
 
 > **Why a dock on Omarchy?** Omarchy is built around the keyboard, and a
@@ -37,8 +40,10 @@ under `plugins[]` (hot-reloads on save):
 | key | default | values |
 |---|---|---|
 | `position` | `"bottom"` | `bottom`, `left`, `right` |
+| `align` | `"center"` | `start`, `center`, `end` — icons at the left/right (bottom dock) or top/bottom (side dock) |
+| `fullWidth` | `false` | bool — stretch the dock along the whole screen edge |
 | `iconSize` | `48` | 24–128 |
-| `magnification` | `true` | bool |
+| `magnification` | `false` | bool |
 | `magnifyScale` | `1.6` | 1–2.5 |
 | `autoHide` | `"smart"` | `never` (reserves space), `smart` (hide when a window touches it), `always` |
 | `windowScope` | `"all"` | `all`, `monitor`, `workspace` |
@@ -46,6 +51,7 @@ under `plugins[]` (hot-reloads on save):
 | `showLauncher` | `true` | bool |
 | `showNewWorkspace` | `true` | bool — button that jumps to an empty workspace on that monitor (middle-click: choose the monitor) |
 | `showRunning` | `true` | bool |
+| `showSession` | `false` | bool — session button (log out / restart / shut down) at the end of the dock |
 | `border` | `true` | bool — theme border around the dock |
 | `iconStyle` | `"original"` | `original`, `mono` (tinted), `line` (outline glyphs) |
 | `monitors` | `"all"` | `"all"`, `"main"`, or `["DP-1", ...]` |
@@ -70,6 +76,8 @@ in the theme color. Or right-click the app → **Custom icon…** to pick a file
 ```
 omarchy-shell dock reveal | openSettings | closePopups
 omarchy-shell dock setPosition left|bottom|right
+omarchy-shell dock setAlign start|center|end
+omarchy-shell dock setFullWidth true|false
 omarchy-shell dock setIconSize 56
 omarchy-shell dock setAutoHide never|smart|always
 omarchy-shell dock setBorder true|false

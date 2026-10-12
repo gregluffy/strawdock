@@ -4,8 +4,8 @@ import QtQuick.Effects
 import Quickshell.Widgets
 import qs.Commons
 
-// One dock slot: an app icon, the app-grid button, or the separator between
-// pinned and running apps.
+// One dock slot: an app icon, the app-grid / new-workspace / session button,
+// or a separator.
 Item {
   id: tile
 
@@ -154,9 +154,9 @@ Item {
     }
 
     Text {
-      visible: tile.kind === "launcher" || tile.kind === "newworkspace"
+      visible: tile.kind === "launcher" || tile.kind === "newworkspace" || tile.kind === "session"
       anchors.centerIn: parent
-      text: tile.kind === "launcher" ? "󰀻" : "󰐕"
+      text: tile.kind === "launcher" ? "󰀻" : (tile.kind === "session" ? String.fromCodePoint(0xF0425) : "󰐕")  // md-power
       color: mouse.containsMouse ? Color.accent : Color.foreground
       font.family: Style.font.family
       font.pixelSize: tile.host ? Math.round(tile.host.iconSize * 0.62 * tile.zoom) : 24

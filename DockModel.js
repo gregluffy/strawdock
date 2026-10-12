@@ -7,8 +7,10 @@ var DEFAULT_PINNED = ["foot", "org.gnome.Nautilus", "google-chrome", "code", "sp
 
 var DEFAULTS = {
   position: "bottom",       // bottom | left | right
+  align: "center",          // start | center | end — where the icons sit along the edge (left/right, or top/bottom)
+  fullWidth: false,         // stretch the dock along the whole screen edge
   iconSize: 48,             // px, before magnification
-  magnification: true,
+  magnification: false,
   magnifyScale: 1.6,        // peak zoom of the hovered icon
   autoHide: "smart",        // never | smart (hide when a window touches the dock) | always
   windowScope: "all",       // all | monitor | workspace — which windows each dock shows
@@ -16,6 +18,7 @@ var DEFAULTS = {
   showLauncher: true,       // app-grid button at the start of the dock
   showNewWorkspace: true,   // "new workspace" button next to the app grid
   showRunning: true,        // show running apps that are not pinned
+  showSession: false,       // session button (log out / restart / shut down) at the end of the dock
   border: true,             // draw the theme border around the dock
   iconStyle: "original",    // original | mono (theme-tinted icons) | line (outline glyphs)
   monitors: "all",          // "all", "main", or an array of output names, e.g. ["DP-1", "DP-3"]
@@ -55,6 +58,8 @@ function normalizeSettings(raw) {
   }
   return {
     position: oneOf(s.position, ["bottom", "left", "right"], DEFAULTS.position),
+    align: oneOf(s.align, ["start", "center", "end"], DEFAULTS.align),
+    fullWidth: s.fullWidth === undefined ? DEFAULTS.fullWidth : s.fullWidth === true,
     iconSize: Math.round(clamp(s.iconSize, 24, 128, DEFAULTS.iconSize)),
     magnification: s.magnification === undefined ? DEFAULTS.magnification : s.magnification === true,
     magnifyScale: clamp(s.magnifyScale, 1, 2.5, DEFAULTS.magnifyScale),
@@ -64,6 +69,7 @@ function normalizeSettings(raw) {
     showLauncher: s.showLauncher === undefined ? DEFAULTS.showLauncher : s.showLauncher === true,
     showNewWorkspace: s.showNewWorkspace === undefined ? DEFAULTS.showNewWorkspace : s.showNewWorkspace === true,
     showRunning: s.showRunning === undefined ? DEFAULTS.showRunning : s.showRunning === true,
+    showSession: s.showSession === undefined ? DEFAULTS.showSession : s.showSession === true,
     border: s.border === undefined ? DEFAULTS.border : s.border === true,
     iconStyle: oneOf(s.iconStyle, ["original", "mono", "line"], DEFAULTS.iconStyle),
     monitors: monitors,

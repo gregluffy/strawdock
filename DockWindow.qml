@@ -40,6 +40,19 @@ PanelWindow {
   readonly property int radius: Style.cornerRadius > 0 ? Style.cornerRadius + Math.round(dockPad / 2) : 0
   readonly property int tileRadius: Style.cornerRadius
 
+  // Where the dock sits along its edge, and whether it spans all of it.
+  readonly property string align: s.align
+  readonly property bool fullWidth: s.fullWidth
+  readonly property real edgeLen: vertical ? win.height : win.width
+
+  // Start of a span of length `len` along the edge, kept `inset` px from
+  // the ends when aligned to one of them.
+  function alongPos(len, inset) {
+    if (align === "start") return inset
+    if (align === "end") return edgeLen - inset - len
+    return (edgeLen - len) / 2
+  }
+
   readonly property int crossBase: margin + thickness + zoomExtra + tipSpace
   // The surface keeps a fixed size with room for popups reserved up front.
   // Resizing a layer surface when a popup opens/closes makes Hyprland show
@@ -61,7 +74,9 @@ PanelWindow {
   WlrLayershell.namespace: "omarchy-dock"
   WlrLayershell.layer: WlrLayer.Top
   WlrLayershell.keyboardFocus: popupMode !== "" ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
-  exclusionMode: s.autoHide === "never" ? ExclusionMode.Normal : ExclusionMode.Ignore
+  // A full-length dock stays clear of other panels (e.g. the top bar) instead
+  // of running underneath them.
+  exclusionMode: s.autoHide === "never" || fullWidth ? ExclusionMode.Normal : ExclusionMode.Ignore
   exclusiveZone: s.autoHide === "never" ? thickness + margin : 0
 
   mask: Region {
@@ -89,6 +104,10 @@ PanelWindow {
     for (var j = 0; j < apps.length; j++) {
       if (j === pinnedCount && pinnedCount > 0) out.push({ key: "__separator__", kind: "separator" })
       out.push({ key: apps[j].key, kind: "app" })
+    }
+    if (s.showSession) {
+      if (out.length > 0) out.push({ key: "__sessionseparator__", kind: "separator" })
+      out.push({ key: "__session__", kind: "session" })
     }
     return out
   }
@@ -155,7 +174,10 @@ PanelWindow {
     if (magLen <= 0) { hoverBase = -1; return }
     // Map the pointer back into unmagnified coordinates so zoom doesn't feed
     // back into itself as the row grows.
-    hoverBase = Util.clamp(along * baseRowLength / magLen, -tileBase, baseRowLength + tileBase)
+    var mapped = along * baseRowLength / magLen
+    // Far from the icons (the empty part of a full-length dock): no zoom.
+    if (mapped < -tileBase || mapped > baseRowLength + tileBase) { hoverBase = -1; return }
+    hoverBase = mapped
   }
 
   // -------------------------------------------------------------- hiding
@@ -211,10 +233,11 @@ PanelWindow {
 
   // Dock rectangle at rest (not hidden, not magnified), window-local.
   function restRect() {
-    var len = baseRowLength + dockPad * 2
-    if (position === "bottom") return { x: (win.width - len) / 2, y: win.height - margin - thickness, w: len, h: thickness }
-    if (position === "left") return { x: margin, y: (win.height - len) / 2, w: thickness, h: len }
-    return { x: win.width - margin - thickness, y: (win.height - len) / 2, w: thickness, h: len }
+    var len = fullWidth ? edgeLen - margin * 2 : baseRowLength + dockPad * 2
+    var start = fullWidth ? margin : alongPos(len, margin)
+    if (position === "bottom") return { x: start, y: win.height - margin - thickness, w: len, h: thickness }
+    if (position === "left") return { x: margin, y: start, w: thickness, h: len }
+    return { x: win.width - margin - thickness, y: start, w: thickness, h: len }
   }
 
   // --------------------------------------------------------------- stage
@@ -264,12 +287,14 @@ PanelWindow {
     BorderSurface {
       id: dockBg
       readonly property var rest: win.restRect()
-      readonly property real length: (win.vertical ? row.height : row.width) + win.dockPad * 2
+      readonly property real length: win.fullWidth ? win.edgeLen - win.margin * 2
+        : (win.vertical ? row.height : row.width) + win.dockPad * 2
+      readonly property real start: win.fullWidth ? win.margin : win.alongPos(length, win.margin)
       width: win.vertical ? win.thickness : length
       height: win.vertical ? length : win.thickness
-      x: win.position === "bottom" ? (win.width - width) / 2
+      x: win.position === "bottom" ? start
         : (win.position === "left" ? win.margin - win.hideOffset : win.width - win.margin - width + win.hideOffset)
-      y: win.position === "bottom" ? win.height - win.margin - height + win.hideOffset : (win.height - height) / 2
+      y: win.position === "bottom" ? win.height - win.margin - height + win.hideOffset : start
       radius: win.radius
       color: Util.alpha(Color.bar.background, win.s.opacity)
       borderSpec: win.s.border
@@ -288,14 +313,18 @@ PanelWindow {
     // Icons. Tiles hug the screen-side edge and grow outward when zoomed.
     Grid {
       id: row
+      // Along the edge: inside the background, or aligned within a full-length dock.
+      readonly property real start: win.fullWidth
+        ? win.alongPos(win.vertical ? height : width, win.margin + win.dockPad)
+        : (win.vertical ? dockBg.y : dockBg.x) + win.dockPad
       columns: win.vertical ? 1 : Math.max(1, appsModel.count)
       spacing: win.itemGap
       verticalItemAlignment: Grid.AlignBottom
       horizontalItemAlignment: win.position === "left" ? Grid.AlignLeft
         : (win.position === "right" ? Grid.AlignRight : Grid.AlignHCenter)
-      x: win.position === "bottom" ? dockBg.x + win.dockPad
+      x: win.position === "bottom" ? start
         : (win.position === "left" ? dockBg.x + win.dockPad : dockBg.x + dockBg.width - win.dockPad - width)
-      y: win.position === "bottom" ? dockBg.y + dockBg.height - win.dockPad - height : dockBg.y + win.dockPad
+      y: win.position === "bottom" ? dockBg.y + dockBg.height - win.dockPad - height : start
       opacity: dockBg.opacity
 
       Repeater {
@@ -340,6 +369,7 @@ PanelWindow {
           var t = tooltip.tile
           if (!t) return ""
           if (t.kind === "launcher") return "Applications"
+          if (t.kind === "session") return "Session"
           if (t.kind === "newworkspace") return (Hyprland.monitors.values || []).length > 1 ? "New workspace  ·  middle-click: pick monitor" : "New workspace"
           var app = t.app
           if (!app) return ""
@@ -372,7 +402,8 @@ PanelWindow {
         y: popupCard.pad
         sourceComponent: win.popupMode === "picker" ? pickerComponent
           : (win.popupMode === "menu" ? menuComponent : (win.popupMode === "settings" ? settingsComponent
-          : (win.popupMode === "monitors" ? monitorsComponent : null)))
+          : (win.popupMode === "monitors" ? monitorsComponent
+          : (win.popupMode === "session" ? sessionComponent : null))))
       }
     }
   }
@@ -388,6 +419,8 @@ PanelWindow {
   property string dragKey: ""
   property string popupMode: ""
   property string popupKey: ""
+  // Settings section shown when the settings popup opens (kept between opens).
+  property string settingsPage: "layout"
   property point popupAnchor: Qt.point(0, 0)
   readonly property var popupApp: popupKey !== "" ? (appsByKey[popupKey] || null) : null
 
@@ -417,6 +450,12 @@ PanelWindow {
 
   // ------------------------------------------------------------- actions
   function activate(tile, button) {
+    if (tile.kind === "session") {
+      if (button === Qt.RightButton) openPopup("settings", null)
+      else if (popupMode === "session") closePopup()
+      else openPopup("session", tile)
+      return
+    }
     if (tile.kind === "launcher" || tile.kind === "newworkspace") {
       if (button === Qt.RightButton) openPopup("settings", null)
       else if (tile.kind === "launcher") dock.openAppGrid()
@@ -478,6 +517,7 @@ PanelWindow {
     property string glyph: ""
     property string hint: ""
     property bool emphasized: false
+    property bool selected: false
     signal triggered()
     implicitWidth: rowGlyph.implicitWidth + rowLabel.implicitWidth + rowHint.implicitWidth + Style.space(12) * 2 + Style.space(10) * 2
     implicitHeight: Style.spacing.popupRowHeight + Style.space(2)
@@ -486,7 +526,8 @@ PanelWindow {
     Rectangle {
       anchors.fill: parent
       radius: Style.cornerRadius
-      color: rowMouse.pressed ? Style.pressedFill : (rowMouse.containsMouse ? Style.hoverFill : "transparent")
+      color: rowMouse.pressed ? Style.pressedFill
+        : (menuRow.selected ? Style.selectedFill : (rowMouse.containsMouse ? Style.hoverFill : "transparent"))
     }
     Text {
       id: rowGlyph
@@ -534,8 +575,8 @@ PanelWindow {
 
   component SettingRow: Row {
     property string label: ""
-    property int labelW: Style.space(120)
-    property int controlW: Style.space(230)
+    property int labelW: Style.space(130)
+    property int controlW: Style.space(260)
     default property alias control: holder.data
     spacing: Style.space(12)
     Text {
@@ -877,253 +918,389 @@ PanelWindow {
     }
   }
 
-  // Dock settings.
+  // Session button: log out / restart / shut down.
+  Component {
+    id: sessionComponent
+
+    Column {
+      id: sessionMenu
+      width: Style.space(220)
+      spacing: Style.space(2)
+
+      SectionTitle {
+        text: "Session"
+        width: sessionMenu.width
+        bottomPadding: Style.space(6)
+      }
+
+      Repeater {
+        model: [
+          { action: "logout", label: "Log out", glyph: 0xF0343 },    // md-logout
+          { action: "reboot", label: "Restart", glyph: 0xF0709 },    // md-restart
+          { action: "shutdown", label: "Shut down", glyph: 0xF0425 } // md-power
+        ]
+        delegate: MenuRow {
+          required property var modelData
+          glyph: String.fromCodePoint(modelData.glyph)
+          label: modelData.label
+          onTriggered: { win.closePopup(); win.dock.session(modelData.action) }
+        }
+      }
+    }
+  }
+
+
+  // Dock settings: a section list on the left, the chosen section's rows on
+  // the right. All sections share one size so the popup doesn't jump around.
+  component SettingsPage: Column {
+    property string title: ""
+    property bool current: false
+    spacing: Style.space(12)
+    // Hidden pages stay laid out (they size the popup) but take no input.
+    opacity: current ? 1 : 0
+    enabled: current
+
+    SectionTitle { text: parent.title }
+  }
+
   Component {
     id: settingsComponent
 
-    Column {
-      id: settingsCol
-      readonly property int labelW: Style.space(120)
-      readonly property int controlW: Style.space(230)
-      spacing: Style.space(12)
+    Row {
+      id: settingsRoot
+      readonly property var pages: [
+        { id: "layout", label: "Layout", glyph: 0xF056E },        // md-view_dashboard_outline
+        { id: "appearance", label: "Appearance", glyph: 0xF03D8 }, // md-palette_outline
+        { id: "items", label: "Items", glyph: 0xF0570 },           // md-view_list
+        { id: "monitors", label: "Monitors", glyph: 0xF0379 }      // md-monitor
+      ]
+      spacing: Style.space(14)
 
-      SectionTitle { text: "Dock" }
+      Column {
+        id: nav
+        width: Style.space(160)
+        spacing: Style.space(2)
 
-      SettingRow {
-        label: "Position"
-        ButtonGroup {
-          options: [{ value: "left", label: "Left" }, { value: "bottom", label: "Bottom" }, { value: "right", label: "Right" }]
-          value: win.s.position
-          onChanged: function(v) { win.dock.updateSettings({ position: v }); win.closePopup() }
+        SectionTitle {
+          text: "Dock"
+          bottomPadding: Style.space(6)
+        }
+
+        Repeater {
+          model: settingsRoot.pages
+          delegate: MenuRow {
+            required property var modelData
+            glyph: String.fromCodePoint(modelData.glyph)
+            label: modelData.label
+            selected: win.settingsPage === modelData.id
+            emphasized: selected
+            onTriggered: win.settingsPage = modelData.id
+          }
         }
       }
 
-      SettingRow {
-        label: "Auto-hide"
-        ButtonGroup {
-          options: [
-            { value: "never", label: "Off", tooltip: "Always visible, windows make room" },
-            { value: "smart", label: "Smart", tooltip: "Hide when a window touches the dock" },
-            { value: "always", label: "Always", tooltip: "Show only when the pointer hits the edge" }
-          ]
-          value: win.s.autoHide
-          onChanged: function(v) { win.dock.updateSettings({ autoHide: v }) }
-        }
+      Rectangle {
+        width: 1
+        height: pageBox.height
+        color: Util.alpha(Color.popups.text, 0.15)
       }
 
-      SettingRow {
-        label: "Monitors"
-        ButtonGroup {
-          options: [
-            { value: "all", label: "All" },
-            { value: "main", label: "Main", tooltip: "Only on " + win.dock.monitorLabel(win.dock.mainMonitorName) },
-            { value: "custom", label: "Selected" }
-          ]
-          value: Array.isArray(win.s.monitors) ? "custom" : win.s.monitors
-          onChanged: function(v) { win.dock.setMonitorMode(v) }
-        }
-      }
+      Item {
+        id: pageBox
+        width: layoutPage.width
+        height: Math.max(layoutPage.implicitHeight, appearancePage.implicitHeight,
+          itemsPage.implicitHeight, monitorsPage.implicitHeight, nav.implicitHeight)
 
-      // Main: pick which monitor is main. Selected: toggle monitors on/off.
-      SettingRow {
-        visible: win.s.monitors !== "all"
-        label: win.s.monitors === "main" ? "Main monitor" : "Show on"
-        Flow {
-          width: parent.width
-          spacing: Style.space(6)
-          Repeater {
-            model: Quickshell.screens
-            delegate: Rectangle {
-              id: chip
-              required property var modelData
-              readonly property string name: String(modelData.name)
-              readonly property bool selected: win.s.monitors === "main"
-                ? name === win.dock.mainMonitorName
-                : (Array.isArray(win.s.monitors) && win.s.monitors.indexOf(name) !== -1)
-              readonly property bool here: name === String(win.screen ? win.screen.name : "")
-              width: chipText.implicitWidth + Style.space(10) * 2
-              height: chipText.implicitHeight + Style.space(5) * 2
-              radius: Style.cornerRadius
-              color: chipMouse.containsMouse ? Style.hoverFill : (selected ? Style.selectedFill : Style.normalFill)
-              border.width: 1
-              border.color: selected ? Color.accent : Style.normalBorderColor
-              Text {
-                id: chipText
-                anchors.centerIn: parent
-                text: win.dock.monitorLabel(chip.name) + (chip.here ? " •" : "")
-                color: chip.selected ? Color.accent : Color.popups.text
-                font.family: Style.font.family
-                font.pixelSize: Style.font.body
-                font.bold: chip.selected
-              }
-              MouseArea {
-                id: chipMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                  if (win.s.monitors === "main") win.dock.updateSettings({ mainMonitor: chip.name })
-                  else win.dock.toggleMonitor(chip.name)
+        SettingsPage {
+          id: layoutPage
+          current: win.settingsPage === "layout"
+          title: "Layout"
+
+          SettingRow {
+            label: "Position"
+            ButtonGroup {
+              options: [{ value: "left", label: "Left" }, { value: "bottom", label: "Bottom" }, { value: "right", label: "Right" }]
+              value: win.s.position
+              onChanged: function(v) { win.dock.updateSettings({ position: v }); win.closePopup() }
+            }
+          }
+
+          SettingRow {
+            label: "Alignment"
+            ButtonGroup {
+              options: win.vertical
+                ? [{ value: "start", label: "Top" }, { value: "center", label: "Center" }, { value: "end", label: "Bottom" }]
+                : [{ value: "start", label: "Left" }, { value: "center", label: "Center" }, { value: "end", label: "Right" }]
+              value: win.s.align
+              onChanged: function(v) { win.dock.updateSettings({ align: v }) }
+            }
+          }
+
+          SettingRow {
+            label: win.vertical ? "Full height" : "Full width"
+            ToggleSwitch {
+              checked: win.s.fullWidth
+              onToggled: win.dock.updateSettings({ fullWidth: !win.s.fullWidth })
+            }
+          }
+
+          SettingRow {
+            label: "Auto-hide"
+            ButtonGroup {
+              options: [
+                { value: "never", label: "Off", tooltip: "Always visible, windows make room" },
+                { value: "smart", label: "Smart", tooltip: "Hide when a window touches the dock" },
+                { value: "always", label: "Always", tooltip: "Show only when the pointer hits the edge" }
+              ]
+              value: win.s.autoHide
+              onChanged: function(v) { win.dock.updateSettings({ autoHide: v }) }
+            }
+          }
+        }
+
+        SettingsPage {
+          id: appearancePage
+          current: win.settingsPage === "appearance"
+          title: "Appearance"
+
+          SettingRow {
+            label: "Icon style"
+            ButtonGroup {
+              options: [
+                { value: "original", label: "Original", tooltip: "The apps' own icons" },
+                { value: "mono", label: "Mono", tooltip: "App icons tinted with the theme color" },
+                { value: "line", label: "Line", tooltip: "Outline glyphs in the theme color" }
+              ]
+              value: win.s.iconStyle
+              onChanged: function(v) { win.dock.updateSettings({ iconStyle: v }) }
+            }
+          }
+
+          SettingRow {
+            label: "Icon size  " + sizeSlider.liveValue
+            PanelSlider {
+              id: sizeSlider
+              width: parent.width
+              minimum: 24
+              maximum: 96
+              step: 2
+              integer: true
+              value: win.s.iconSize
+              onReleased: function(v) { win.dock.updateSettings({ iconSize: Math.round(v) }) }
+            }
+          }
+
+          SettingRow {
+            label: "Opacity  " + Math.round(opacitySlider.liveValue * 100) + "%"
+            PanelSlider {
+              id: opacitySlider
+              width: parent.width
+              minimum: 0
+              maximum: 1
+              step: 0.05
+              value: win.s.opacity
+              onReleased: function(v) { win.dock.updateSettings({ opacity: Math.round(v * 100) / 100 }) }
+            }
+          }
+
+          SettingRow {
+            label: "Border"
+            ToggleSwitch {
+              checked: win.s.border
+              onToggled: win.dock.updateSettings({ border: !win.s.border })
+            }
+          }
+
+          SettingRow {
+            label: "Magnification"
+            ToggleSwitch {
+              checked: win.s.magnification
+              onToggled: win.dock.updateSettings({ magnification: !win.s.magnification })
+            }
+          }
+
+          SettingRow {
+            label: "Zoom  " + zoomSlider.liveValue.toFixed(1) + "×"
+            // Only matters with magnification on.
+            enabled: win.s.magnification
+            opacity: enabled ? 1 : 0.45
+            PanelSlider {
+              id: zoomSlider
+              width: parent.width
+              minimum: 1.1
+              maximum: 2.2
+              step: 0.1
+              value: win.s.magnifyScale
+              onReleased: function(v) { win.dock.updateSettings({ magnifyScale: Math.round(v * 10) / 10 }) }
+            }
+          }
+        }
+
+        SettingsPage {
+          id: itemsPage
+          current: win.settingsPage === "items"
+          title: "Items"
+
+          SettingRow {
+            label: "Show windows"
+            ButtonGroup {
+              options: [
+                { value: "all", label: "All" },
+                { value: "monitor", label: "Monitor" },
+                { value: "workspace", label: "Workspace" }
+              ]
+              value: win.s.windowScope
+              onChanged: function(v) { win.dock.updateSettings({ windowScope: v }) }
+            }
+          }
+
+          SettingRow {
+            label: "Running apps"
+            ToggleSwitch {
+              checked: win.s.showRunning
+              onToggled: win.dock.updateSettings({ showRunning: !win.s.showRunning })
+            }
+          }
+
+          SettingRow {
+            label: "Previews"
+            ToggleSwitch {
+              checked: win.s.previews
+              onToggled: win.dock.updateSettings({ previews: !win.s.previews })
+            }
+          }
+
+          SettingRow {
+            label: "App grid button"
+            ToggleSwitch {
+              checked: win.s.showLauncher
+              onToggled: win.dock.updateSettings({ showLauncher: !win.s.showLauncher })
+            }
+          }
+
+          SettingRow {
+            label: "New workspace"
+            ToggleSwitch {
+              checked: win.s.showNewWorkspace
+              onToggled: win.dock.updateSettings({ showNewWorkspace: !win.s.showNewWorkspace })
+            }
+          }
+
+          SettingRow {
+            label: "Session button"
+            ToggleSwitch {
+              checked: win.s.showSession
+              onToggled: win.dock.updateSettings({ showSession: !win.s.showSession })
+            }
+          }
+        }
+
+        SettingsPage {
+          id: monitorsPage
+          current: win.settingsPage === "monitors"
+          title: "Monitors"
+
+          SettingRow {
+            label: "Show on"
+            ButtonGroup {
+              options: [
+                { value: "all", label: "All" },
+                { value: "main", label: "Main", tooltip: "Only on " + win.dock.monitorLabel(win.dock.mainMonitorName) },
+                { value: "custom", label: "Selected" }
+              ]
+              value: Array.isArray(win.s.monitors) ? "custom" : win.s.monitors
+              onChanged: function(v) { win.dock.setMonitorMode(v) }
+            }
+          }
+
+          // Main: pick which monitor is main. Selected: toggle monitors on/off.
+          SettingRow {
+            visible: win.s.monitors !== "all"
+            label: win.s.monitors === "main" ? "Main monitor" : "Monitors"
+            Flow {
+              width: parent.width
+              spacing: Style.space(6)
+              Repeater {
+                model: Quickshell.screens
+                delegate: Rectangle {
+                  id: chip
+                  required property var modelData
+                  readonly property string name: String(modelData.name)
+                  readonly property bool selected: win.s.monitors === "main"
+                    ? name === win.dock.mainMonitorName
+                    : (Array.isArray(win.s.monitors) && win.s.monitors.indexOf(name) !== -1)
+                  readonly property bool here: name === String(win.screen ? win.screen.name : "")
+                  width: chipText.implicitWidth + Style.space(10) * 2
+                  height: chipText.implicitHeight + Style.space(5) * 2
+                  radius: Style.cornerRadius
+                  color: chipMouse.containsMouse ? Style.hoverFill : (selected ? Style.selectedFill : Style.normalFill)
+                  border.width: 1
+                  border.color: selected ? Color.accent : Style.normalBorderColor
+                  Text {
+                    id: chipText
+                    anchors.centerIn: parent
+                    text: win.dock.monitorLabel(chip.name) + (chip.here ? " •" : "")
+                    color: chip.selected ? Color.accent : Color.popups.text
+                    font.family: Style.font.family
+                    font.pixelSize: Style.font.body
+                    font.bold: chip.selected
+                  }
+                  MouseArea {
+                    id: chipMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      if (win.s.monitors === "main") win.dock.updateSettings({ mainMonitor: chip.name })
+                      else win.dock.toggleMonitor(chip.name)
+                    }
+                  }
+                  PanelToolTip {
+                    visible: chipMouse.containsMouse
+                    text: chip.name + "  ·  " + String(chip.modelData.model || "") + (chip.here ? " (this monitor)" : "")
+                  }
                 }
               }
-              PanelToolTip {
-                visible: chipMouse.containsMouse
-                text: chip.name + "  ·  " + String(chip.modelData.model || "") + (chip.here ? " (this monitor)" : "")
-              }
             }
           }
-        }
-      }
 
-      // Friendly names shown instead of output names (DP-1, HDMI-A-1, ...).
-      SettingRow {
-        label: "Monitor names"
-        Column {
-          width: parent.width
-          spacing: Style.space(6)
-          Repeater {
-            model: Quickshell.screens
-            delegate: Row {
-              id: nameRow
-              required property var modelData
-              readonly property string name: String(modelData.name)
+          // Friendly names shown instead of output names (DP-1, HDMI-A-1, ...).
+          SettingRow {
+            label: "Names"
+            Column {
               width: parent.width
-              spacing: Style.space(8)
-              Text {
-                id: outputText
-                width: Style.space(70)
-                anchors.verticalCenter: parent.verticalCenter
-                text: nameRow.name
-                elide: Text.ElideRight
-                color: Util.alpha(Color.popups.text, 0.7)
-                font.family: Style.font.family
-                font.pixelSize: Style.font.caption
-              }
-              TextField {
-                width: nameRow.width - outputText.width - nameRow.spacing
-                text: win.s.monitorNames[nameRow.name] || ""
-                placeholderText: String(nameRow.modelData.model || nameRow.name)
-                foreground: Color.popups.text
-                verticalPadding: Style.space(4)
-                onEditingFinished: win.dock.setMonitorName(nameRow.name, text)
-                Keys.onEscapePressed: win.closePopup()
+              spacing: Style.space(6)
+              Repeater {
+                model: Quickshell.screens
+                delegate: Row {
+                  id: nameRow
+                  required property var modelData
+                  readonly property string name: String(modelData.name)
+                  width: parent.width
+                  spacing: Style.space(8)
+                  Text {
+                    id: outputText
+                    width: Style.space(70)
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: nameRow.name
+                    elide: Text.ElideRight
+                    color: Util.alpha(Color.popups.text, 0.7)
+                    font.family: Style.font.family
+                    font.pixelSize: Style.font.caption
+                  }
+                  TextField {
+                    width: nameRow.width - outputText.width - nameRow.spacing
+                    text: win.s.monitorNames[nameRow.name] || ""
+                    placeholderText: String(nameRow.modelData.model || nameRow.name)
+                    foreground: Color.popups.text
+                    verticalPadding: Style.space(4)
+                    onEditingFinished: win.dock.setMonitorName(nameRow.name, text)
+                    Keys.onEscapePressed: win.closePopup()
+                  }
+                }
               }
             }
           }
-        }
-      }
-
-      SettingRow {
-        label: "Icon style"
-        ButtonGroup {
-          options: [
-            { value: "original", label: "Original", tooltip: "The apps' own icons" },
-            { value: "mono", label: "Mono", tooltip: "App icons tinted with the theme color" },
-            { value: "line", label: "Line", tooltip: "Outline glyphs in the theme color" }
-          ]
-          value: win.s.iconStyle
-          onChanged: function(v) { win.dock.updateSettings({ iconStyle: v }) }
-        }
-      }
-
-      SettingRow {
-        label: "Show windows"
-        ButtonGroup {
-          options: [
-            { value: "all", label: "All" },
-            { value: "monitor", label: "Monitor" },
-            { value: "workspace", label: "Workspace" }
-          ]
-          value: win.s.windowScope
-          onChanged: function(v) { win.dock.updateSettings({ windowScope: v }) }
-        }
-      }
-
-      SettingRow {
-        label: "Icon size  " + sizeSlider.liveValue
-        PanelSlider {
-          id: sizeSlider
-          width: settingsCol.controlW
-          minimum: 24
-          maximum: 96
-          step: 2
-          integer: true
-          value: win.s.iconSize
-          onReleased: function(v) { win.dock.updateSettings({ iconSize: Math.round(v) }) }
-        }
-      }
-
-      SettingRow {
-        label: "Zoom  " + zoomSlider.liveValue.toFixed(1) + "×"
-        PanelSlider {
-          id: zoomSlider
-          width: settingsCol.controlW
-          minimum: 1.1
-          maximum: 2.2
-          step: 0.1
-          value: win.s.magnifyScale
-          onReleased: function(v) { win.dock.updateSettings({ magnifyScale: Math.round(v * 10) / 10 }) }
-        }
-      }
-
-      SettingRow {
-        label: "Opacity  " + Math.round(opacitySlider.liveValue * 100) + "%"
-        PanelSlider {
-          id: opacitySlider
-          width: settingsCol.controlW
-          minimum: 0
-          maximum: 1
-          step: 0.05
-          value: win.s.opacity
-          onReleased: function(v) { win.dock.updateSettings({ opacity: Math.round(v * 100) / 100 }) }
-        }
-      }
-
-      SettingRow {
-        label: "Magnification"
-        ToggleSwitch {
-          checked: win.s.magnification
-          onToggled: win.dock.updateSettings({ magnification: !win.s.magnification })
-        }
-      }
-
-      SettingRow {
-        label: "Previews"
-        ToggleSwitch {
-          checked: win.s.previews
-          onToggled: win.dock.updateSettings({ previews: !win.s.previews })
-        }
-      }
-
-      SettingRow {
-        label: "Running apps"
-        ToggleSwitch {
-          checked: win.s.showRunning
-          onToggled: win.dock.updateSettings({ showRunning: !win.s.showRunning })
-        }
-      }
-
-      SettingRow {
-        label: "App grid button"
-        ToggleSwitch {
-          checked: win.s.showLauncher
-          onToggled: win.dock.updateSettings({ showLauncher: !win.s.showLauncher })
-        }
-      }
-
-      SettingRow {
-        label: "New workspace"
-        ToggleSwitch {
-          checked: win.s.showNewWorkspace
-          onToggled: win.dock.updateSettings({ showNewWorkspace: !win.s.showNewWorkspace })
-        }
-      }
-
-      SettingRow {
-        label: "Border"
-        ToggleSwitch {
-          checked: win.s.border
-          onToggled: win.dock.updateSettings({ border: !win.s.border })
         }
       }
     }
