@@ -511,11 +511,15 @@ Item {
     Quickshell.execDetached(["bash", decodeURIComponent(script), String(monitorName || "")])
   }
 
-  // Session button: the same Omarchy scripts as the system menu (they close
-  // windows cleanly before logging out / rebooting / powering off).
+  // Session button: the same Omarchy command as the system menu (it closes
+  // windows cleanly before logging out / rebooting / powering off). Omarchy
+  // 4.5 merged omarchy-system-<action> into `omarchy-system <action>`; fall
+  // back to the old per-action scripts on older installs.
   function session(action) {
-    var cmd = { logout: "omarchy-system-logout", reboot: "omarchy-system-reboot", shutdown: "omarchy-system-shutdown" }[action]
-    if (cmd) Quickshell.execDetached([cmd])
+    if (["logout", "reboot", "shutdown"].indexOf(action) === -1) return
+    Quickshell.execDetached(["bash", "-c",
+      'if command -v omarchy-system >/dev/null; then exec omarchy-system "$1"; else exec "omarchy-system-$1"; fi',
+      "strawdock-session", action])
   }
 
   function openAppGrid() {

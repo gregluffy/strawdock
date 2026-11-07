@@ -20,7 +20,7 @@ The three `iconStyle`s, shown on the Osaka Jade theme:
   opens a menu to pick which monitor gets the new workspace (names come from
   `monitorNames` when set).
 - Session button (`showSession`): log out, restart or shut down (through
-  Omarchy's `omarchy-system-*` scripts, which close windows cleanly first).
+  Omarchy's `omarchy-system` command, which closes windows cleanly first).
 - Right-click the dock background (or the app-grid button) for settings,
   grouped into Layout, Appearance, Items and Monitors.
 - Colors, borders, font and corner radius follow the current Omarchy theme.
